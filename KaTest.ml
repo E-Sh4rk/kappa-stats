@@ -139,6 +139,7 @@ let main () =
     let steps = Trace.of_yojson (Yojson.Basic.Util.member "trace" json) in
     let steps_array = Array.of_list steps in
     let steps_nb = Array.length steps_array in
+    log "Trace file loaded !" ;
 
     if !rule_of_interest = "" then ( let () = Format.eprintf "Please specify a rule of interest." in exit 2 )
     else (
