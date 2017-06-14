@@ -16,22 +16,6 @@ let options = [
 let description = ""
 let log s = print_string s ; print_newline () ; flush stdout
 
-let rule_ast_name env rule_id = 
-  Format.asprintf "%a" 
-    (Model.print_ast_rule ~env) 
-    (Model.get_rule env rule_id).Primitives.syntactic_rule
-
-let agent_of_test test = match test with
-  | Instantiation.Is_Here a -> a
-  | Instantiation.Has_Internal ((a,_),_) -> a
-  | Instantiation.Is_Free (a,_) -> a
-  | Instantiation.Is_Bound (a, _) -> a
-  | Instantiation.Has_Binding_type ((a,_),_) -> a
-  | Instantiation.Is_Bound_to ((a,_),(a',_)) -> a
-
-let agents_involved instantiation =
-  List.sort_uniq Agent.compare (List.map agent_of_test (List.flatten instantiation.Instantiation.tests))
-
 module IntMap = Map.Make(struct type t = int let compare = compare end)
 type binding_type = (int*int) option
 module BindingMap = Map.Make(struct type t = binding_type let compare = compare end)
@@ -58,7 +42,7 @@ let treat_agent mixture counter_state counter_link (agent_id, agent_type) =
   done
 
 let treat_event instantiation mixture counter_state counter_link =
-  let agents = agents_involved instantiation in
+  let agents = Rule_tools.agents_involved instantiation in
   List.iter (treat_agent mixture counter_state counter_link) agents
 
 let init_counter signatures =
@@ -155,7 +139,7 @@ let main () =
         let step = steps_array.(i) in
         (
         match step with
-        | Trace.Rule (rule_id, instantiation, infos) when rule_ast_name env rule_id = !rule_of_interest
+        | Trace.Rule (rule_id, instantiation, infos) when Rule_tools.rule_ast_name env rule_id = !rule_of_interest
         -> treat_event instantiation (!mixture).Replay.graph counter_state counter_link
         | _ -> ()
         ) ;
