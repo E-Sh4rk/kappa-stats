@@ -20,36 +20,37 @@ module IntMap = Map.Make(struct type t = int let compare = compare end)
 type binding_type = (int*int) option
 module BindingMap = Map.Make(struct type t = binding_type let compare = compare end)
 
-let get_eff agent_type site state c =
-  try ( Hashtbl.find c.(agent_type).(site) state)
+let get_eff i site state c =
+  try ( Hashtbl.find c.(i).(site) state)
   with Not_found -> 0
 
 let binding_type_of_binding b = match b with
   | None -> None
   | Some ((a_id,a_type),s) -> Some (a_type, s)
 
-let treat_agent mixture counter_state counter_link (agent_id, agent_type) =
+let treat_agent mixture counter_state counter_link i (agent_id, agent_type) =
   let nb_sites = Edges.get_sites agent_id mixture (*Signature.arity signatures agent_type*) in
   for site=0 to nb_sites-1 do
     (
     try (
     let value = Edges.get_internal agent_id site mixture in
-    Hashtbl.replace counter_state.(agent_type).(site) value ((get_eff agent_type site value counter_state)+1) ;
+    Hashtbl.replace counter_state.(i).(site) value ((get_eff i site value counter_state)+1) ;
     ) with _ -> ()
     ) ;
     let link = binding_type_of_binding (Edges.link_destination agent_id site mixture) in
-    Hashtbl.replace counter_link.(agent_type).(site) link ((get_eff agent_type site link counter_link)+1)
+    Hashtbl.replace counter_link.(i).(site) link ((get_eff i site link counter_link)+1)
   done
 
-let treat_event instantiation mixture counter_state counter_link =
-  let agents = Rule_tools.agents_involved instantiation in
-  List.iter (treat_agent mixture counter_state counter_link) agents
+let treat_event env srule_id instantiation mixture counter_state counter_link =
+  let agents = Rule_tools.assign_agents_instances env mixture srule_id (Rule_tools.agents_involved instantiation) in
+  Array.iteri (fun i ags -> List.iter (treat_agent mixture counter_state counter_link i) ags) agents
 
-let init_counter signatures =
-  let nb_agents = Signature.size signatures in
+let init_counter env rule_name =
+  let agents_tested = Rule_tools.syntactic_agents_tested env rule_name in
+  let nb_agents = List.length agents_tested in
   let c = Array.make nb_agents (Array.of_list []) in
   for i=0 to nb_agents-1 do
-    let nb_sites = Signature.arity signatures i in
+    let nb_sites = Signature.arity (Model.signatures env) (List.nth agents_tested i).LKappa.ra_type in
     let s = Array.make nb_sites (Hashtbl.create 0) in
     for j=0 to nb_sites-1 do
       s.(j) <- Hashtbl.create 3
@@ -87,22 +88,24 @@ let print_site signature fmt agent_id site (states, links) =
   List.iter (print_state signature fmt agent_id site) states ;
   List.iter (print_link signature fmt agent_id site) links
 
-let print_agent fmt signature i (states, links) =
+let print_agent fmt signature agent_id (states, links) =
   let pr x = Format.fprintf fmt x in
   let stats = Array.map2 (fun a b -> (a,b)) states links in
   (*let name = Signature.agent_of_num i signatures in
   pr "%s :@." name ;*)
   pr "---------- " ;
-  Signature.print_agent signature fmt i ;
+  Signature.print_agent signature fmt agent_id ;
   pr " ----------@." ;
-  Array.iteri (print_site signature fmt i) stats ;
+  Array.iteri (print_site signature fmt agent_id) stats ;
   pr "@."
 
-let write_output signature states links =
+let write_output env rule_name states links =
+  let signature = Model.signatures env in
+  let agents_tested = Rule_tools.syntactic_agents_tested env rule_name in
   let oc = open_out !outputs_prefix in
   let fmt = Format.formatter_of_out_channel oc in
   let stats = Array.map2 (fun a b -> (a,b)) states links in
-  Array.iteri (print_agent fmt signature) stats ; close_out oc
+  Array.iteri (fun i s -> print_agent fmt signature (List.nth agents_tested i).LKappa.ra_type s) stats ; close_out oc
 
 let main () =
   let () =
@@ -127,26 +130,25 @@ let main () =
 
     if !rule_of_interest = "" then ( let () = Format.eprintf "Please specify a rule of interest." in exit 2 )
     else (
-      (* For each AST left-hand pattern, for each site, associate a value to its effective. *)
-      (* For each agent type, for each site, associate a value to its effective. *)
+      (* For each AST left-hand agent pattern, for each site, associate a value to its effective. *)
       (* Type is : (int int Hashtbl.t) array array *)
-      let counter_state = init_counter (Model.signatures env)
-      (* For each agent type, for each site, associate a binding type to its effective. *)
+      let counter_state = init_counter env !rule_of_interest
+      (* For each AST left-hand agent pattern, for each site, associate a binding type to its effective. *)
       (* Type is : (binding_type int Hashtbl.t) array array *)
-      and counter_link = init_counter (Model.signatures env) in
+      and counter_link = init_counter env !rule_of_interest in
       let mixture = ref (Replay.init_state ~with_connected_components:true) in
       for i=0 to steps_nb-1 do
         let step = steps_array.(i) in
         (
         match step with
         | Trace.Rule (rule_id, instantiation, infos) when Rule_tools.rule_ast_name env rule_id = !rule_of_interest
-        -> treat_event instantiation (!mixture).Replay.graph counter_state counter_link
+        -> treat_event env (Rule_tools.srule_id_from_rule_id env rule_id) instantiation (!mixture).Replay.graph counter_state counter_link
         | _ -> ()
         ) ;
         let (new_mixture, _) = Replay.do_step (Model.signatures env) (!mixture) step in
         mixture := new_mixture
       done ;
-      write_output (Model.signatures env) (compute_data counter_state) (compute_data counter_link)
+      write_output env !rule_of_interest (compute_data counter_state) (compute_data counter_link)
     ) 
   )
 
