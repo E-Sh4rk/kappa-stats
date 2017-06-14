@@ -34,7 +34,7 @@ let rule_agent_site_for_link_nb rule_agent link_nb not_site =
 let find_link_extremity rule_mixture link_nb (not_nth,not_site) =
     let rec _find_link_extremity rule_mixture nth =
     match rule_mixture with
-    | [] -> (-1,-1)
+    | [] -> (not_nth,not_site)
     | rule_agent::lst ->
         let site = rule_agent_site_for_link_nb rule_agent link_nb (if nth=not_nth then not_site else -1) in
         if site >= 0 then (nth,site) else _find_link_extremity lst (nth+1)
@@ -119,3 +119,23 @@ let assign_agents_instances env mixture srule_id candidate_agents =
         done
     done ;
     candidates
+
+let remove_all lst e = List.map (fun l -> List.filter (fun x -> x<>e) l) lst
+
+let all_possible_configurations candidates =
+    let candidates = Array.to_list candidates in
+    let rec _apc candidates = match candidates with
+    | [] -> [[]]
+    | []::tl -> []
+    | (a::tl1)::tl2 -> ((List.map (fun l -> a::l) (_apc (remove_all tl2 a)))) @ (_apc (tl1::tl2))
+    in List.map Array.of_list (_apc candidates)
+
+let () = Random.self_init ()
+
+let print_candidates c = Array.iter (fun l -> List.iter (fun (x,y) -> Printf.printf "(%d,%d) " x y) l ; Printf.printf "\n") c ; Printf.printf "\n"
+
+let choose_possible_configuration candidates =
+    let configurations = all_possible_configurations candidates in
+    let i = Random.int (List.length configurations) in
+    List.nth configurations i
+
