@@ -18,6 +18,21 @@ let syntactic_agents_tested env rule_name =
     let srule = Model.get_ast_rule env srule_id in
     srule.LKappa.r_mix
 
+let is_internal_state_tested env rule_name agent_pos site =
+    let mix = syntactic_agents_tested env rule_name in
+    let ints_agent = (List.nth mix agent_pos).LKappa.ra_ints in
+    match ints_agent.(site) with
+    | LKappa.I_ANY | LKappa.I_ANY_CHANGED _ | LKappa.I_ANY_ERASED -> false
+    | LKappa.I_VAL_CHANGED _ | LKappa.I_VAL_ERASED _ -> true
+
+let is_link_type_tested env rule_name agent_pos site =
+    let mix = syntactic_agents_tested env rule_name in
+    let ports_agent = (List.nth mix agent_pos).LKappa.ra_ports in
+    let ((link,locality),switching) = ports_agent.(site) in
+    match link with
+    | Ast.ANY_FREE | Ast.LNK_ANY | Ast.LNK_SOME -> false
+    | Ast.LNK_VALUE _ | Ast.LNK_FREE | Ast.LNK_TYPE _ -> true
+
 let rule_agent_site_for_link_nb rule_agent link_nb not_site =
     let ports = rule_agent.LKappa.ra_ports in
     let res = ref (-1) in
