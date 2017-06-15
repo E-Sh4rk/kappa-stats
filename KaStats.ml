@@ -106,8 +106,7 @@ let print_site signature fmt agent_id site (states, links) =
 let print_agent fmt signature agent_id (states, links) =
   let pr x = Format.fprintf fmt x in
   let stats = Array.map2 (fun a b -> (a,b)) states links in
-  (*let name = Signature.agent_of_num i signatures in
-  pr "%s :@." name ;*)
+  (*let name = Signature.agent_of_num i signatures in ...*)
   pr "---------- " ;
   Signature.print_agent signature fmt agent_id ;
   pr " ----------@." ;

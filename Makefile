@@ -1,8 +1,8 @@
-KaTest: KaTest.native
+KaStats: KaStats.native
 	cp $< $@
 
-KaTest.native: 
+KaStats.native: clean
 	ocamlbuild -use-ocamlfind $@
 
 clean:
-	rm -rf _build KaTest KaTest.native
+	rm -rf _build KaStats KaStats.native
