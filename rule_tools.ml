@@ -129,7 +129,7 @@ let assign_agents_instances env mixture srule_id candidate_agents =
         ok := true ;
         for i=0 to nb_agents-1 do
             let new_lst = match diff_lst candidates.(i) sg with [] -> candidates.(i) | l -> l in
-            (if new_lst <> candidates.(i) then ok := false) ;
+            if new_lst <> candidates.(i) then ok := false ;
             candidates.(i) <- new_lst
         done
     done ;
