@@ -111,8 +111,7 @@ let print_agent fmt signature agent_id (states, links) =
   pr "---------- " ;
   Signature.print_agent signature fmt agent_id ;
   pr " ----------@." ;
-  Array.iteri (print_site signature fmt agent_id) stats ;
-  pr "@."
+  Array.iteri (print_site signature fmt agent_id) stats
 
 let write_output env rule_name states links =
   let signature = Model.signatures env in
