@@ -1,4 +1,4 @@
-# kappa-test
+# KaStats
 
 To compile, run `make`.
 
@@ -14,4 +14,4 @@ Examples :
 
 
 
-**Note :** for now, the trace file is entirely loaded into memory, so giving a big trace file to KaStats will result in an _Out of Memory_ error.
+**Note :** for now, the trace is entirely loaded into memory, so giving a big trace to KaStats will result in an _Out of Memory_ error.
