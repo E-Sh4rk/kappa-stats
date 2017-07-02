@@ -1,4 +1,6 @@
 
+module ASet = Set.Make(Agent)
+
 let srule_id_from_rule_id env rid = (Model.get_rule env rid).Primitives.syntactic_rule
 
 let rule_ast_name env rule_id = 
@@ -6,11 +8,11 @@ let rule_ast_name env rule_id =
     (Model.print_ast_rule ~env) 
     (srule_id_from_rule_id env rule_id)
 
-let agents_involved instantiation =
+let agents_tested tests =
   let aggregate_agent acc test = match test with
-  | Instantiation.Is_Here a -> a::acc
+  | Instantiation.Is_Here a -> ASet.add a acc
   | _ -> acc
-  in List.sort_uniq Agent.compare (List.fold_left aggregate_agent [] (List.flatten instantiation.Instantiation.tests))
+  in List.fold_left aggregate_agent ASet.empty (List.flatten tests)
 
 let syntactic_agents_tested env rule_name =
     let rules = Model.nums_of_rule rule_name env in

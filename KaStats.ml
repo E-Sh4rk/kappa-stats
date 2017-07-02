@@ -47,7 +47,8 @@ let treat_agent env mixture counter_state counter_link i (agent_id, agent_type) 
   done
 
 let treat_event env srule_id instantiation mixture counter_state counter_link =
-  let agents = Rule_tools.assign_agents_instances env mixture srule_id (Rule_tools.agents_involved instantiation) in
+  let agents = Rule_tools.assign_agents_instances env mixture srule_id
+  (Rule_tools.ASet.elements (Rule_tools.agents_tested instantiation.Instantiation.tests)) in
   let agents = Rule_tools.choose_possible_configuration agents in
   Array.iteri (treat_agent env mixture counter_state counter_link) agents
 
